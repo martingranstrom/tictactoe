@@ -3,6 +3,8 @@ import Fields from "./Fields";
 import "./App.css";
 
 const startingSize = 3;
+const minRow = 3;
+const maxRow = 6;
 
 const setInitialGameValues = (size) => new Array(size * size).fill("");
 
@@ -75,6 +77,29 @@ function isWin(state) {
   }
 }
 
+const waveAnimationInds = calcInitDiags();
+
+function calcInitDiags() {
+  var initIndsAll = {};
+  for (let r = minRow; r <= maxRow; r++) {
+    var initInds = [];
+    for (var i = 0; i < r; i++) {
+      initInds.push(getDiagInds(i, r));
+    }
+
+    // Add second half diags
+    for (var k = r - 1; k > 0; k--) {
+      initInds.push(
+        initInds[k].map((d) => {
+          return (r * r - Number(d)).toString();
+        })
+      );
+    }
+    initIndsAll[r] = initInds;
+  }
+  return initIndsAll;
+}
+
 function App() {
   const [gameState, setGameState] = useState(
     setInitialGameValues(startingSize)
@@ -84,26 +109,31 @@ function App() {
   const [isXTurn, setIsXTurn] = useState(true); // Player X starts
 
   const handleChange = (event) => {
-    //console.log(window.navigator.language);
-    //if (navigator.geolocation) {
-    //  window.navigator.geolocation.getCurrentPosition((pos) => {
-    //    console.log(pos);
-    //  });
-    //} else {
-    //  console.log("No pos");
-    //}
-
     setGameState(setInitialGameValues(event.target.value));
+  };
+  const wave = async () => {
+    const rowLength = Math.sqrt(gameState.length);
+    var initInds = waveAnimationInds[rowLength];
+
+    for (var ii = 0; ii < initInds.length; ii++) {
+      for (var iii = 0; iii < initInds[ii].length; iii++) {
+        var btn = document.getElementById(initInds[ii][iii]);
+        btn.setAttribute("class", "initButton");
+        btn.value = "";
+      }
+      await wait(60);
+    }
   };
 
   const resetGame = () => {
-    setGameState(setInitialGameValues(Math.sqrt(gameState.length)));
     setGameHasFinished(false);
     setGameHasStarted(false);
     setIsXTurn(true);
-    document.querySelectorAll(".winner").forEach((winner) => {
-      winner.className = "";
+    document.querySelectorAll("input:not(winner)").forEach((notWinner) => {
+      notWinner.className = "";
     });
+    wave();
+    setGameState(setInitialGameValues(Math.sqrt(gameState.length)));
   };
 
   function handleClick(index) {
@@ -119,13 +149,13 @@ function App() {
 
     const winningInd = isWin(newState);
     if (winningInd) {
-      const loop = async () => {
+      const winLoop = async () => {
         for (let element of winningInd) {
           document.getElementById(element).setAttribute("class", "winner");
           await wait(40);
         }
       };
-      loop();
+      winLoop();
       setGameHasFinished(true);
     } else if (!newState.includes("")) {
       setGameHasFinished(true);
@@ -139,32 +169,7 @@ function App() {
     for (var i = 0; i < gameState.length; i++) {
       document.getElementById(i.toString()).setAttribute("class", "");
     }
-    const loop = async () => {
-      const rowLength = Math.sqrt(gameState.length);
-      var initInds = [];
-      for (var i = 0; i < rowLength; i++) {
-        initInds.push(getDiagInds(i, rowLength));
-      }
-
-      // Add second half diags
-      for (var k = rowLength - 1; k > 0; k--) {
-        initInds.push(
-          initInds[k].map((d) => {
-            return (gameState.length - Number(d)).toString();
-          })
-        );
-      }
-
-      for (var ii = 0; ii < initInds.length; ii++) {
-        await wait(60);
-        for (var iii = 0; iii < initInds[ii].length; iii++) {
-          document
-            .getElementById(initInds[ii][iii])
-            .setAttribute("class", "initButton");
-        }
-      }
-    };
-    loop();
+    wave();
   }, [gameState.length]);
 
   return (
@@ -172,8 +177,8 @@ function App() {
       <input
         className="sizeSlider"
         type={"range"}
-        min="3"
-        max="6"
+        min={minRow}
+        max={maxRow}
         defaultValue={startingSize}
         onChange={handleChange}
         disabled={gameHasStarted}

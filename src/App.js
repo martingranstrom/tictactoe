@@ -116,13 +116,14 @@ function App() {
     var initInds = waveAnimationInds[rowLength];
 
     for (var ii = 0; ii < initInds.length; ii++) {
+      await wait(60);
       for (var iii = 0; iii < initInds[ii].length; iii++) {
         var btn = document.getElementById(initInds[ii][iii]);
         btn.setAttribute("class", "initButton");
-        btn.value = "";
+        //btn.value = "";
       }
-      await wait(60);
     }
+    setGameState(setInitialGameValues(Math.sqrt(gameState.length)));
   };
 
   const resetGame = () => {
@@ -133,7 +134,6 @@ function App() {
       notWinner.className = "";
     });
     wave();
-    setGameState(setInitialGameValues(Math.sqrt(gameState.length)));
   };
 
   function handleClick(index) {
